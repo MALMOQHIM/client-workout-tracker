@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Hajime Tracker</title>
+
+  <!-- PWA & Mobile Web App Settings -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Hajime">
+  <meta name="theme-color" content="#18181b">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="https://via.placeholder.com/180/18181b/3b82f6?text=H">
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background-color: #000000; color: #f4f4f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow-x: hidden; }
+
+    /* Mobile Container Frame */
+    .app-container { width: 100%; max-width: 430px; height: 100vh; max-height: 932px; background-color: #121215; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+    @media (min-width: 450px) { .app-container { height: 880px; border-radius: 36px; border: 6px solid #27272a; } }
+
+    /* Header Bar Navigation */
+    .app-header { height: 56px; background: #18181b; border-bottom: 1px solid #27272a; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; font-size: 15px; font-weight: 800; color: #f4f4f5; letter-spacing: 0.5px; text-transform: uppercase; }
+    .header-nav-group { display: flex; align-items: center; gap: 6px; }
+    .header-btn { background: #27272a; border: none; color: #a1a1aa; padding: 7px 11px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer; text-transform: uppercase; transition: all 0.15s; }
+    .header-btn:active { opacity: 0.7; transform: scale(0.95); }
+    .nav-arrow-btn { background: #27272a; border: none; color: #3b82f6; padding: 6px 12px; border-radius: 8px; font-size: 15px; font-weight: 900; cursor: pointer; }
+    .nav-arrow-btn:active { background: #3b82f6; color: #fff; }
+
+    /* Coach Corner Icon Buttons */
+    .corner-icon-btn { background: #222226; border: 1px solid #2e2e33; color: #3b82f6; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; transition: all 0.2s; }
+    .corner-icon-btn:active { transform: scale(0.9); background: #3b82f6; color: #fff; }
+
+    /* Body Container */
+    .app-body { flex: 1; padding: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+
+    /* Cards Layout */
+    .card { background: #18181b; border: 1px solid #27272a; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+    .card-title { font-size: 17px; font-weight: 800; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* Week Dropdown & Selector Bar */
+    .week-selector-bar { display: flex; align-items: center; gap: 8px; background: #18181b; border: 1px solid #27272a; border-radius: 14px; padding: 8px 12px; }
+    .week-select-dropdown { flex: 1; background: #27272a; color: #f4f4f5; border: 1px solid #3f3f46; padding: 10px 14px; border-radius: 10px; font-size: 15px; font-weight: 800; text-transform: uppercase; outline: none; cursor: pointer; text-align: center; }
+
+    /* Split Cards & Exercise Badges */
+    .split-card { background: #18181b; border: 1px solid #27272a; border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; }
+    .split-card:active { transform: scale(0.98); }
+    .split-card.completed { background: rgba(34, 197, 94, 0.12); border-color: #22c55e; color: #4ade80; }
+    .split-card.partial { background: rgba(113, 113, 122, 0.25); border-color: #71717a; color: #e4e4e7; }
+
+    /* Clean Sub Grid for Exercise Info (Set & Target Reps Only) */
+    .grid-2-clean { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .sub-box { background: #18181b; border: 1px solid #27272a; border-radius: 10px; padding: 12px 6px; text-align: center; }
+    .sub-box-label { font-size: 11px; font-weight: 800; color: #71717a; text-transform: uppercase; }
+    .sub-box-value { font-size: 16px; font-weight: 800; color: #3b82f6; margin-top: 4px; text-transform: uppercase; }
+
+    /* Action Buttons */
+    .btn-primary { background: #3b82f6; color: #ffffff; border: none; padding: 16px; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: pointer; text-align: center; width: 100%; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.15s; }
+    .btn-primary:active { opacity: 0.85; transform: scale(0.98); }
+
+    /* Keypad Weight Display */
+    .weight-display { font-size: 38px; font-weight: 900; text-align: center; padding: 10px; background: #27272a; border-radius: 12px; margin-bottom: 6px; border: 2px solid transparent; }
+    .weight-display.previous { color: #71717a; }
+    .weight-display.active { color: #eab308; }
+    .weight-display.focused { border-color: #3b82f6; }
+
+    .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .keypad-btn { background: #27272a; color: #f4f4f5; border: none; padding: 16px; border-radius: 12px; font-size: 22px; font-weight: 800; cursor: pointer; }
+    .keypad-btn:active { background: #3f3f46; transform: scale(0.95); }
+    .keypad-btn.action { background: #3f3f46; color: #3b82f6; }
+
+    /* Reps Options Grid */
+    .options-grid-reps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .option-card { background: #27272a; border: 1px solid #3f3f46; padding: 18px 8px; border-radius: 12px; text-align: center; font-size: 20px; font-weight: 800; cursor: pointer; color: #f4f4f5; transition: all 0.1s; }
+    .option-card:active { transform: scale(0.9); background: #3b82f6; color: #fff; border-color: #60a5fa; }
+
+    /* Clean Last Week Summary Card */
+    .summary-card { background: #18181b; border: 1px solid #27272a; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+    .summary-title { font-size: 11px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px; }
+    .summary-row { display: flex; justify-content: space-between; align-items: center; background: #222226; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 800; border: 1px solid #2e2e33; }
+
+    /* Modals Overlay */
+    .modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.88); display: none; justify-content: center; align-items: center; padding: 16px; z-index: 50; }
+    .modal-card { background: #18181b; border: 1px solid #27272a; border-radius: 18px; padding: 18px; width: 100%; display: flex; flex-direction: column; gap: 12px; max-height: 90vh; overflow-y: auto; }
+
+    /* Notification Toast */
+    .toast { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); background: #22c55e; color: #000; padding: 10px 18px; border-radius: 24px; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: none; z-index: 100; box-shadow: 0 4px 20px rgba(34,197,94,0.4); }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  <!-- Top Navigation Header -->
+  <div class="app-header" id="appHeader">
+    <div class="header-nav-group">
+      <button class="corner-icon-btn" id="btnExportTop" onclick="openExportModal()" title="Export 12 Weeks">📋</button>
+      <button class="header-btn" id="btnBack" onclick="goBack()" style="display:none;">BACK</button>
+      <button class="nav-arrow-btn" id="btnPrevStep" onclick="goPrevStep()" style="display:none;">‹</button>
+      <button class="nav-arrow-btn" id="btnNextStep" onclick="goNextStep()" style="display:none;">›</button>
+    </div>
+    <span id="headerTitle">HAJIME</span>
+    <div class="header-nav-group">
+      <button class="header-btn" id="btnList" onclick="goList()" style="display:none;">LIST</button>
+      <button class="header-btn" id="btnHome" onclick="goHome()" style="display:none;">HOME</button>
+      <button class="corner-icon-btn" id="btnImportTop" onclick="openImportModal()" title="Coach Routine Update">📥</button>
+    </div>
+  </div>
+
+  <!-- Dynamic Screen Content -->
+  <div class="app-body" id="appBody"></div>
+
+  <!-- Toast Message -->
+  <div class="toast" id="toastMsg">COPIED TO CLIPBOARD ✓</div>
+
+  <!-- Coach Import Modal -->
+  <div class="modal-overlay" id="importModal">
+    <div class="modal-card">
+      <div class="card-title">COACH ROUTINE UPDATE</div>
+      <div style="font-size:12px; color:#a1a1aa; line-height:1.4;">Paste workout routine text (supports both raw workout text & Google Sheets columns):</div>
+      <textarea id="coachInputText" rows="9" style="background:#27272a; color:#f4f4f5; border:1px solid #3f3f46; padding:10px; border-radius:10px; font-size:11px; width:100%; resize:none;" placeholder="Paste schedule here..."></textarea>
+      
+      <div style="display:flex; gap:8px;">
+        <button class="btn-primary" style="background:#3f3f46;" onclick="pasteCoachSample()">LOAD SAMPLE</button>
+        <button class="btn-primary" onclick="processCoachRoutineUpdate()">APPLY UPDATE</button>
+      </div>
+      <button class="header-btn" onclick="closeImportModal()" style="width:100%; padding:10px;">CANCEL</button>
+    </div>
+  </div>
+
+  <!-- Coach Export / Download Modal -->
+  <div class="modal-overlay" id="exportModal">
+    <div class="modal-card">
+      <div class="card-title">EXPORT DATA FOR SHEETS</div>
+      <div style="font-size:12px; color:#a1a1aa; line-height:1.4;">Copy full trainee data formatted directly for Google Sheets / Excel:</div>
+      
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button class="btn-primary" style="background:#22c55e; color:#000;" onclick="copyTSVData(true)">COPY ALL 12 WEEKS</button>
+        <button class="btn-primary" style="background:#3b82f6;" onclick="copyTSVData(false)">COPY CURRENT WEEK ONLY</button>
+      </div>
+
+      <textarea id="exportPreviewText" rows="6" readonly style="background:#27272a; color:#a1a1aa; border:1px solid #3f3f46; padding:10px; border-radius:10px; font-size:10px; width:100%; resize:none; font-family:monospace;"></textarea>
+
+      <button class="header-btn" onclick="closeExportModal()" style="width:100%; padding:10px;">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ---------------- DEFAULT 4-SPLIT TEMPLATE ---------------- */
+  const DEFAULT_SPLITS_TEMPLATE = [
+    {
+      name: "ANTERIOR (A)",
+      exercises: [
+        { name: "Dumbbell incline chest press", sxr: "2 x 8-10", setsCount: 2 },
+        { name: "Machine flys", sxr: "3 x 10-12", setsCount: 3 },
+        { name: "Cable Latrial raises", sxr: "3 x 10-12", setsCount: 3 },
+        { name: "Preacher curl", sxr: "3 x 10-12", setsCount: 3 },
+        { name: "Leg extension", sxr: "2 x 10-12", setsCount: 2 },
+        { name: "Abs crunches cable", sxr: "2 x 10-12", setsCount: 2 }
+      ]
+    },
+    {
+      name: "POSTERIOR (A)",
+      exercises: [
+        { name: "T-bar row", sxr: "2 x 6-8", setsCount: 2 },
+        { name: "Lat pulldown wide grip", sxr: "2 x 10-12", setsCount: 2 },
+        { name: "Close grip low row", sxr: "2 x 10-12", setsCount: 2 },
+        { name: "Hip thrust", sxr: "3 x 8-10", setsCount: 3 },
+        { name: "Overhead triceps extension", sxr: "3 x 10-12", setsCount: 3 },
+        { name: "Adductor machine", sxr: "2 x 8-10", setsCount: 2 }
+      ]
+    },
+    {
+      name: "ANTERIOR (B)",
+      exercises: [
+        { name: "Leg press machine", sxr: "2 x 8-10", setsCount: 2 },
+        { name: "Shoulder press machine", sxr: "2 x 8-10", setsCount: 2 },
+        { name: "Chest press machine", sxr: "2 x 6-8", setsCount: 2 },
+        { name: "Machine latrial raises", sxr: "3 x 10-12", setsCount: 3 },
+        { name: "Incline dumbbell curl", sxr: "3 x 10-12", setsCount: 3 },
+        { name: "Cable pallof", sxr: "2 x 10-12", setsCount: 2 }
+      ]
+    },
+    {
+      name: "POSTERIOR (B)",
+      exercises: [
+        { name: "Upper back pulldown", sxr: "3 x 8-10", setsCount: 3 },
+        { name: "Machine iliac single pulldown", sxr: "3 x 8-10", setsCount: 3 },
+        { name: "Leg curl", sxr: "2 x 10-12", setsCount: 2 },
+        { name: "Cable triceps pushdown", sxr: "3 x 10-12", setsCount: 3 },
+        { name: "Hyper extension", sxr: "2 x 10-12", setsCount: 2 },
+        { name: "Calf raises on leg press machine", sxr: "2 x 10-12", setsCount: 2 }
+      ]
+    }
+  ];
+
+  /* ---------------- STATE INITIALIZATION ---------------- */
+  let programData = loadProgramData();
+  let currentWeekIdx = 0; // 0 to 11 (Weeks 1 to 12)
+  let currentSplitIdx = null;
+  let currentExerciseIdx = null;
+  let currentSetIdx = 0;
+  let currentStep = 'WEIGHT'; // WEIGHT -> REPS -> NOTE
+  
+  let activeWeightStr = "";
+  let activeWeightStr2 = "";
+  let activePrimePin = 1;
+
+  window.onload = function() {
+    renderHomeScreen();
+  };
+
+  function buildDefault12Weeks(template) {
+    let weeks = [];
+    for (let w = 1; w <= 12; w++) {
+      let splits = template.map(s => ({
+        name: s.name,
+        isComplete: false,
+        exercises: s.exercises.map(e => ({
+          name: e.name,
+          sxr: e.sxr,
+          setsCount: e.setsCount || 3,
+          sets: [],
+          note: "",
+          isComplete: false,
+          isPrime: e.name.toLowerCase().includes('prime')
+        }))
+      }));
+      weeks.push({ weekNum: w, splits: splits });
+    }
+    return weeks;
+  }
+
+  function loadProgramData() {
+    let saved = localStorage.getItem('hajime_client_v1_data');
+    if (saved) {
+      try { return JSON.parse(saved); } catch(e) { }
+    }
+    let initial = buildDefault12Weeks(DEFAULT_SPLITS_TEMPLATE);
+    localStorage.setItem('hajime_client_v1_data', JSON.stringify(initial));
+    return initial;
+  }
+
+  function saveState() {
+    localStorage.setItem('hajime_client_v1_data', JSON.stringify(programData));
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toastMsg');
+    toast.innerText = msg;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 2200);
+  }
+
+  /* ---------------- HEADER CONTROLLER ---------------- */
+  function setHeader(title, showBack = true, showHome = true, showArrows = false, showList = false, showCorners = false) {
+    document.getElementById('headerTitle').innerText = title.toUpperCase();
+    document.getElementById('btnBack').style.display = showBack ? 'inline-block' : 'none';
+    document.getElementById('btnHome').style.display = showHome ? 'inline-block' : 'none';
+    document.getElementById('btnPrevStep').style.display = showArrows ? 'inline-block' : 'none';
+    document.getElementById('btnNextStep').style.display = showArrows ? 'inline-block' : 'none';
+    document.getElementById('btnList').style.display = showList ? 'inline-block' : 'none';
+    
+    document.getElementById('btnExportTop').style.display = showCorners ? 'flex' : 'none';
+    document.getElementById('btnImportTop').style.display = showCorners ? 'flex' : 'none';
+  }
+
+  function goHome() {
+    currentSplitIdx = null;
+    currentExerciseIdx = null;
+    activeWeightStr = "";
+    activeWeightStr2 = "";
+    renderHomeScreen();
+  }
+
+  function goList() {
+    if (currentSplitIdx !== null) {
+      currentExerciseIdx = null;
+      activeWeightStr = "";
+      activeWeightStr2 = "";
+      renderExerciseList();
+    }
+  }
+
+  function goPrevStep() {
+    if (currentStep === 'NOTE') currentStep = 'REPS';
+    else if (currentStep === 'REPS') currentStep = 'WEIGHT';
+    else if (currentStep === 'WEIGHT' && currentSetIdx > 0) {
+      currentSetIdx--;
+      currentStep = 'REPS';
+      activeWeightStr = ""; activeWeightStr2 = "";
+    } else {
+      goList();
+      return;
+    }
+    renderStep();
+  }
+
+  function goNextStep() {
+    if (currentStep === 'WEIGHT') currentStep = 'REPS';
+    else if (currentStep === 'REPS') {
+      const ex = programData[currentWeekIdx].splits[currentSplitIdx].exercises[currentExerciseIdx];
+      const totalSets = ex.setsCount || 3;
+      if (currentSetIdx + 1 < totalSets) {
+        currentSetIdx++;
+        currentStep = 'WEIGHT';
+        activeWeightStr = ""; activeWeightStr2 = ""; activePrimePin = 1;
+      } else {
+        currentStep = 'NOTE';
+      }
+    } else if (currentStep === 'NOTE') {
+      saveNoteFinish();
+      return;
+    }
+    renderStep();
+  }
+
+  function goBack() {
+    if (currentStep !== 'WEIGHT' || currentSetIdx > 0) {
+      goPrevStep();
+    } else if (currentExerciseIdx !== null) {
+      currentExerciseIdx = null;
+      renderExerciseList();
+    } else if (currentSplitIdx !== null) {
+      currentSplitIdx = null;
+      renderSplitsScreen();
+    } else {
+      renderHomeScreen();
+    }
+  }
+
+  /* ---------------- SCREEN 1: HOME ---------------- */
+  function renderHomeScreen() {
+    setHeader("HAJIME", false, false, false, false, true);
+    const body = document.getElementById('appBody');
+
+    // Calculate progress
+    let totalWorkouts = 12 * 4;
+    let completedWorkouts = 0;
+    programData.forEach(w => {
+      w.splits.forEach(s => {
+        let done = s.exercises.length > 0 && s.exercises.every(e => e.isComplete);
+        if (done) completedWorkouts++;
+      });
+    });
+
+    let currentWeekObj = programData[currentWeekIdx];
+    let weekDone = currentWeekObj.splits.filter(s => s.exercises.every(e => e.isComplete)).length;
+
+    body.innerHTML = `
+      <div class="card" style="text-align:center; padding:28px 16px;">
+        <div class="card-title" style="font-size:26px; color:#3b82f6; letter-spacing:1px;">HAJIME TRACKER</div>
+        <div style="font-size:12px; color:#71717a; font-weight:700; margin-top:4px;">12-WEEK TRAINING PROGRAM</div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:13px; font-weight:800; color:#a1a1aa;">CURRENT FOCUS</span>
+          <span style="font-size:13px; font-weight:800; color:#3b82f6;">WEEK ${currentWeekIdx + 1} OF 12</span>
+        </div>
+        <div style="font-size:18px; font-weight:900; color:#ffffff; margin-top:4px;">
+          ${weekDone} OF 4 WORKOUTS DONE
+        </div>
+        <div style="background:#27272a; height:8px; border-radius:4px; margin-top:8px; overflow:hidden;">
+          <div style="background:#3b82f6; width:${(weekDone/4)*100}%; height:100%; transition:width 0.3s;"></div>
+        </div>
+      </div>
+
+      <button class="btn-primary" style="padding:20px; font-size:18px;" onclick="renderSplitsScreen()">
+        START WORKOUT
+      </button>
+
+      <div class="card" style="margin-top:auto;">
+        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:800; color:#71717a;">
+          <span>TOTAL PROGRAM PROGRESS</span>
+          <span>${completedWorkouts} / ${totalWorkouts} (${Math.round((completedWorkouts/totalWorkouts)*100)}%)</span>
+        </div>
+      </div>
+    `;
+  }
+
+  /* ---------------- SCREEN 2: SPLITS SELECT (WEEK DROPDOWN) ---------------- */
+  function renderSplitsScreen() {
+    setHeader("WORKOUTS", true, true, false, false, false);
+    const body = document.getElementById('appBody');
+
+    let weekObj = programData[currentWeekIdx];
+
+    // Build Dropdown Options
+    let dropdownOptions = programData.map((w, idx) => {
+      let doneCount = w.splits.filter(s => s.exercises.length > 0 && s.exercises.every(e => e.isComplete)).length;
+      return `<option value="${idx}" ${idx === currentWeekIdx ? 'selected' : ''}>WEEK ${w.weekNum} (${doneCount}/4)</option>`;
+    }).join('');
+
+    // Build Splits Cards
+    let splitsHtml = weekObj.splits.map((splitObj, sIdx) => {
+      let exList = splitObj.exercises || [];
+      let completedCount = exList.filter(e => e.isComplete).length;
+      let isDone = completedCount === exList.length && exList.length > 0;
+      let isPartial = !isDone && completedCount > 0;
+
+      let cardClass = isDone ? 'completed' : (isPartial ? 'partial' : '');
+
+      return `
+        <div class="split-card ${cardClass}" onclick="selectSplit(${sIdx})">
+          <div>
+            <div style="font-weight:800; font-size:17px; text-transform:uppercase;">${splitObj.name}</div>
+            <div style="font-size:11px; color:#71717a; font-weight:700; margin-top:2px;">${exList.length} EXERCISES</div>
+          </div>
+          <div style="font-weight:900; font-size:16px;">
+            ${completedCount} / ${exList.length} ${isDone ? '✓' : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    body.innerHTML = `
+      <div class="week-selector-bar">
+        <button class="nav-arrow-btn" onclick="shiftWeek(-1)" ${currentWeekIdx === 0 ? 'style="opacity:0.3; pointer-events:none;"' : ''}>‹</button>
+        <select class="week-select-dropdown" id="weekSelect" onchange="changeWeek(this.value)">
+          ${dropdownOptions}
+        </select>
+        <button class="nav-arrow-btn" onclick="shiftWeek(1)" ${currentWeekIdx === 11 ? 'style="opacity:0.3; pointer-events:none;"' : ''}>›</button>
+      </div>
+
+      ${splitsHtml}
+    `;
+  }
+
+  function changeWeek(val) {
+    currentWeekIdx = parseInt(val);
+    renderSplitsScreen();
+  }
+
+  function shiftWeek(delta) {
+    let newIdx = currentWeekIdx + delta;
+    if (newIdx >= 0 && newIdx < 12) {
+      currentWeekIdx = newIdx;
+      renderSplitsScreen();
+    }
+  }
+
+  function selectSplit(idx) {
+    currentSplitIdx = idx;
+    currentExerciseIdx = null;
+    renderExerciseList();
+  }
+
+  /* ---------------- SCREEN 3: EXERCISE LIST ---------------- */
+  function renderExerciseList() {
+    currentExerciseIdx = null;
+    const splitObj = programData[currentWeekIdx].splits[currentSplitIdx];
+    setHeader(`W${currentWeekIdx + 1} • ${splitObj.name}`, true, true, false, false, false);
+    const body = document.getElementById('appBody');
+
+    const exercises = splitObj.exercises || [];
+
+    let exListHtml = exercises.map((ex, idx) => {
+      let loggedSetsCount = (ex.sets) ? ex.sets.filter(s => s && s.kg && s.kg !== "-").length : 0;
+      let isDone = ex.isComplete || (loggedSetsCount >= (ex.setsCount || 3));
+      let isPartial = !isDone && loggedSetsCount > 0;
+
+      let cardClass = isDone ? 'completed' : (isPartial ? 'partial' : '');
+      let badgeText = isDone ? '✓' : (isPartial ? `${loggedSetsCount}/${ex.setsCount}` : ex.sxr);
+
+      return `
+        <div class="split-card ${cardClass}" onclick="startExercise(${idx})">
+          <div style="font-weight:800; font-size:15px; text-transform:uppercase;">${idx + 1}. ${ex.name}</div>
+          <div style="font-weight:800; font-size:14px; color:${isDone ? '#4ade80' : '#71717a'};">${badgeText}</div>
+        </div>
+      `;
+    }).join('');
+
+    body.innerHTML = `
+      ${exListHtml}
+    `;
+  }
+
+  function startExercise(idx) {
+    currentExerciseIdx = idx;
+    const ex = programData[currentWeekIdx].splits[currentSplitIdx].exercises[idx];
+    
+    let resumeSetIdx = 0;
+    if (ex.sets && ex.sets.length > 0) {
+      let incompleteIdx = ex.sets.findIndex(s => !s || s.reps === undefined || s.reps === "");
+      if (incompleteIdx !== -1) {
+        resumeSetIdx = incompleteIdx;
+      } else if (ex.sets.length < (ex.setsCount || 3)) {
+        resumeSetIdx = ex.sets.length;
+      }
+    }
+
+    currentSetIdx = resumeSetIdx;
+    currentStep = 'WEIGHT';
+    activeWeightStr = "";
+    activeWeightStr2 = "";
+    activePrimePin = 1;
+    renderStep();
+  }
+
+  /* ---------------- PROGRESSION HELPER: PREVIOUS WEIGHT & LOG ---------------- */
+  function getPreviousLogSets(exName) {
+    const targetName = exName.trim().toLowerCase();
+
+    // Look backward from previous weeks
+    for (let w = currentWeekIdx - 1; w >= 0; w--) {
+      for (let s = 0; s < programData[w].splits.length; s++) {
+        for (let e = 0; e < programData[w].splits[s].exercises.length; e++) {
+          let item = programData[w].splits[s].exercises[e];
+          if (item.name.trim().toLowerCase() === targetName) {
+            if (item.sets && item.sets.some(st => st && st.kg && st.kg !== "-")) {
+              return { weekNum: programData[w].weekNum, sets: item.sets, note: item.note };
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  function getHighestPreviousWeight(exName, setIdx) {
+    const currentEx = programData[currentWeekIdx].splits[currentSplitIdx].exercises[currentExerciseIdx];
+
+    // Check previous set of current workout
+    if (setIdx > 0 && currentEx.sets && currentEx.sets[setIdx - 1] && currentEx.sets[setIdx - 1].kg) {
+      return currentEx.sets[setIdx - 1].kg;
+    }
+
+    // Check previous week log
+    let prev = getPreviousLogSets(exName);
+    if (prev && prev.sets && prev.sets[setIdx] && prev.sets[setIdx].kg) {
+      return prev.sets[setIdx].kg;
+    } else if (prev && prev.sets && prev.sets[0] && prev.sets[0].kg) {
+      return prev.sets[0].kg;
+    }
+
+    return "0";
+  }
+
+  function renderPreviousSummaryHtml(ex) {
+    const prevLog = getPreviousLogSets(ex.name);
+
+    if (!prevLog || !prevLog.sets) {
+      return `
+        <div class="summary-card">
+          <div class="summary-title">LAST LOG</div>
+          <div style="font-size:11px; color:#52525b; text-align:center; font-weight:700; padding:4px 0;">NO PREVIOUS LOG FOUND</div>
+        </div>
+      `;
+    }
+
+    let rowsHtml = prevLog.sets.filter(s => s && s.kg && s.kg !== "-").map((s, idx) => `
+      <div class="summary-row">
+        <span style="color:#3b82f6; width:24px;">S${idx + 1}</span>
+        <span style="color:#f4f4f5; flex:1; text-align:left; padding-left:8px;">
+          ${s.kg} <span style="font-size:10px; color:#71717a; font-weight:700;">KG</span> × ${s.reps || '-'}
+        </span>
+      </div>
+    `).join('');
+
+    return `
+      <div class="summary-card">
+        <div class="summary-title">PREVIOUS WEEK LOG (WEEK ${prevLog.weekNum})</div>
+        ${rowsHtml}
+        ${prevLog.note ? `<div style="font-size:11px; color:#93c5fd; padding-top:4px;"><b>NOTE:</b> ${prevLog.note}</div>` : ''}
+      </div>
+    `;
+  }
+
+  /* ---------------- SCREEN 4: STREAMLINED LOGGING (WEIGHT & REPS ONLY) ---------------- */
+  function renderStep() {
+    const splitObj = programData[currentWeekIdx].splits[currentSplitIdx];
+    const ex = splitObj.exercises[currentExerciseIdx];
+    setHeader(`${splitObj.name}`, true, true, true, true, false);
+    const body = document.getElementById('appBody');
+
+    const totalSets = ex.setsCount || 3;
+    const isPrime = ex.isPrime || ex.name.toLowerCase().includes('prime');
+
+    let prevWeight = getHighestPreviousWeight(ex.name, currentSetIdx);
+    let pParts = prevWeight.toString().split('-');
+    let prevP1 = pParts[0] || '0';
+    let prevP2 = pParts[1] || prevP1;
+
+    let repRange = ex.sxr;
+    if (ex.sxr && ex.sxr.includes('x')) {
+      repRange = ex.sxr.split('x')[1].trim();
+    }
+
+    let headerHtml = `
+      <div class="card" style="text-align:center; padding:16px 12px;">
+        <div class="card-title">${ex.name}</div>
+      </div>
+
+      <div class="grid-2-clean">
+        <div class="sub-box">
+          <div class="sub-box-label">SET</div>
+          <div class="sub-box-value">${currentSetIdx + 1} OF ${totalSets}</div>
+        </div>
+        <div class="sub-box">
+          <div class="sub-box-label">TARGET REPS</div>
+          <div class="sub-box-value">${repRange}</div>
+        </div>
+      </div>
+    `;
+
+    let prevSummaryHtml = (currentStep !== 'NOTE') ? renderPreviousSummaryHtml(ex) : '';
+
+    if (currentStep === 'WEIGHT') {
+      let isTyped1 = activeWeightStr !== "";
+      let displayVal1 = isTyped1 ? activeWeightStr : prevP1;
+
+      let isTyped2 = activeWeightStr2 !== "";
+      let displayVal2 = isTyped2 ? activeWeightStr2 : prevP2;
+
+      body.innerHTML = `
+        ${headerHtml}
+        <div class="card">
+          <div class="card-title" style="font-size:15px; text-align:center;">WEIGHT (KG)</div>
+          ${isPrime ? `
+            <div style="display:flex; gap:8px;">
+              <div class="weight-display ${isTyped1 ? 'active' : 'previous'} ${activePrimePin===1 ? 'focused' : ''}" style="flex:1;" onclick="activePrimePin=1; renderStep();">
+                ${displayVal1}
+              </div>
+              <div class="weight-display ${isTyped2 ? 'active' : 'previous'} ${activePrimePin===2 ? 'focused' : ''}" style="flex:1;" onclick="activePrimePin=2; renderStep();">
+                ${displayVal2}
+              </div>
+            </div>
+          ` : `
+            <div class="weight-display ${isTyped1 ? 'active' : 'previous'}">
+              ${displayVal1} <span style="font-size:16px; opacity:0.6;">KG</span>
+            </div>
+          `}
+
+          <div class="keypad-grid">
+            <button class="keypad-btn" onclick="pressKey('1')">1</button>
+            <button class="keypad-btn" onclick="pressKey('2')">2</button>
+            <button class="keypad-btn" onclick="pressKey('3')">3</button>
+            <button class="keypad-btn" onclick="pressKey('4')">4</button>
+            <button class="keypad-btn" onclick="pressKey('5')">5</button>
+            <button class="keypad-btn" onclick="pressKey('6')">6</button>
+            <button class="keypad-btn" onclick="pressKey('7')">7</button>
+            <button class="keypad-btn" onclick="pressKey('8')">8</button>
+            <button class="keypad-btn" onclick="pressKey('9')">9</button>
+            <button class="keypad-btn action" onclick="pressKey('.')">.</button>
+            <button class="keypad-btn" onclick="pressKey('0')">0</button>
+            <button class="keypad-btn action" onclick="pressKey('⌫')">⌫</button>
+          </div>
+          <button class="btn-primary" style="margin-top:6px;" onclick="saveWeightNext('${prevWeight}')">NEXT</button>
+        </div>
+        ${prevSummaryHtml}
+      `;
+    }
+    else if (currentStep === 'REPS') {
+      let repOptions = [2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 25].map(r => `
+        <div class="option-card" onclick="saveRepsNext(${r})">${r}</div>
+      `).join('');
+
+      body.innerHTML = `
+        ${headerHtml}
+        <div class="card">
+          <div class="card-title" style="font-size:15px; text-align:center;">SELECT COMPLETED REPS</div>
+          <div class="options-grid-reps">${repOptions}</div>
+        </div>
+        ${prevSummaryHtml}
+      `;
+    }
+    else if (currentStep === 'NOTE') {
+      let existingNote = ex.note || "";
+      body.innerHTML = `
+        <div class="card">
+          <div class="card-title">WORKOUT NOTE (OPTIONAL)</div>
+          <textarea id="noteInput" rows="5" oninput="instantSaveNote(this.value)" placeholder="Add notes about form, weight feel, etc..." style="background:#27272a; color:#f4f4f5; border:1px solid #3f3f46; padding:12px; border-radius:10px; font-size:15px; width:100%; resize:none;">${existingNote}</textarea>
+          <button class="btn-primary" style="background:#22c55e; color:#000; margin-top:8px;" onclick="saveNoteFinish()">FINISH EXERCISE ✓</button>
+        </div>
+        ${prevSummaryHtml}
+      `;
+    }
+  }
+
+  function pressKey(key) {
+    let isPin2 = (activePrimePin === 2);
+    let targetStr = isPin2 ? activeWeightStr2 : activeWeightStr;
+
+    if (key === '⌫') {
+      targetStr = targetStr.slice(0, -1);
+    } else if (key === '.') {
+      if (!targetStr.includes('.')) targetStr += '.';
+    } else {
+      targetStr += key;
+    }
+
+    if (isPin2) activeWeightStr2 = targetStr;
+    else activeWeightStr = targetStr;
+
+    renderStep();
+  }
+
+  function saveWeightNext(prevWeight) {
+    const ex = programData[currentWeekIdx].splits[currentSplitIdx].exercises[currentExerciseIdx];
+    const isPrime = ex.isPrime || ex.name.toLowerCase().includes('prime');
+    let pParts = prevWeight.toString().split('-');
+    let p1 = pParts[0] || '0';
+    let p2 = pParts[1] || p1;
+
+    let isTyped1 = activeWeightStr !== "";
+    let isTyped2 = activeWeightStr2 !== "";
+
+    let val = isTyped1 ? activeWeightStr : p1;
+    if (isPrime) {
+      let w1 = isTyped1 ? activeWeightStr : p1;
+      let w2 = isTyped2 ? activeWeightStr2 : p2;
+      val = `${w1}-${w2}`;
+    }
+
+    ensureSetObject();
+    ex.sets[currentSetIdx].kg = val;
+    saveState();
+    currentStep = 'REPS';
+    renderStep();
+  }
+
+  function saveRepsNext(repsVal) {
+    const ex = programData[currentWeekIdx].splits[currentSplitIdx].exercises[currentExerciseIdx];
+    ensureSetObject();
+    ex.sets[currentSetIdx].reps = repsVal;
+    saveState();
+
+    const totalSets = ex.setsCount || 3;
+    if (currentSetIdx + 1 < totalSets) {
+      currentSetIdx++;
+      currentStep = 'WEIGHT';
+      activeWeightStr = "";
+      activeWeightStr2 = "";
+      activePrimePin = 1;
+      renderStep();
+    } else {
+      currentStep = 'NOTE';
+      renderStep();
+    }
+  }
+
+  function instantSaveNote(val) {
+    const ex = programData[currentWeekIdx].splits[currentSplitIdx].exercises[currentExerciseIdx];
+    ex.note = val;
+    saveState();
+  }
+
+  function saveNoteFinish() {
+    const ex = programData[currentWeekIdx].splits[currentSplitIdx].exercises[currentExerciseIdx];
+    const noteEl = document.getElementById('noteInput');
+    if (noteEl) ex.note = noteEl.value;
+    ex.isComplete = true;
+
+    // Check if whole split is completed
+    const splitObj = programData[currentWeekIdx].splits[currentSplitIdx];
+    splitObj.isComplete = splitObj.exercises.every(e => e.isComplete);
+
+    saveState();
+    renderExerciseList();
+  }
+
+  function ensureSetObject() {
+    const ex = programData[currentWeekIdx].splits[currentSplitIdx].exercises[currentExerciseIdx];
+    if (!ex.sets) ex.sets = [];
+    if (!ex.sets[currentSetIdx]) ex.sets[currentSetIdx] = {};
+  }
+
+  /* ---------------- COACH CORNER 1: UPLOAD / IMPORT ROUTINE ---------------- */
+  function openImportModal() {
+    document.getElementById('importModal').style.display = 'flex';
+  }
+
+  function closeImportModal() {
+    document.getElementById('importModal').style.display = 'none';
+  }
+
+  function pasteCoachSample() {
+    const sample = `Workout
+N
+Exercise
+S x R
+Anterior
+(A)
+1Dumbbell incline chest press2 x 8-102Machine flys3 x 10-123Cable Latrial raises3 x 10-124Preacher curl3 x 10-125Leg extension2 x 10-126Abs crunches cable2 x 10-12Workout
+N
+Exercise
+S x R
+Posterior
+(A)
+1T-bar row2 x 6-82Lat pulldown wide grip2 x 10-123Close grip low row2 x 10-124Hip thrust3 x 8-105Overhead triceps extension3 x 10-126Adductor machine2 x 8-10Workout
+N
+Exercise
+S x R
+Anterior
+(B)
+1Leg press machine2 x 8-102Shoulder press machine2 x 8-103Chest press machine2 x 6-84Machine latrial raises3 x 10-125Incline dumbbell curl3 x 10-126Cable pallof2 x 10-12Workout
+N
+Exercise
+S x R
+Posterior
+(B)
+1Upper back pulldown3 x 8-102Machine iliac single pulldown3 x 8-103Leg curl2 x 10-124Cable triceps pushdown3 x 10-125Hyper extension2 x 10-126Calf raises on leg press machine2 x 10-12`;
+    document.getElementById('coachInputText').value = sample;
+  }
+
+  function parseCoachText(text) {
+    let cleaned = text.trim();
+    let splits = [];
+
+    // TSV Format handler
+    if (cleaned.includes('\t')) {
+      let lines = cleaned.split(/\r?\n/);
+      let currentSplit = null;
+      lines.forEach(line => {
+        let parts = line.split('\t');
+        if (parts.length < 4) return;
+        let rawWorkout = parts[1] ? parts[1].replace(/"/g, '').replace(/\\n/g, ' ').trim() : "";
+        let rawN = parts[2] ? parts[2].replace(/"/g, '').trim() : "";
+        let exName = parts[3] ? parts[3].replace(/"/g, '').trim() : "";
+
+        if (!exName || exName.toLowerCase().includes("exercise")) return;
+
+        let cleanWorkout = rawWorkout.toUpperCase();
+        let isNew = false;
+        if (!currentSplit) isNew = true;
+        else if (cleanWorkout && cleanWorkout !== currentSplit.name) isNew = true;
+        else if (rawN === '1') isNew = true;
+
+        if (isNew) {
+          currentSplit = { name: cleanWorkout || `SPLIT ${splits.length + 1}`, exercises: [] };
+          splits.push(currentSplit);
+        }
+
+        let sxr = parts[5] ? parts[5].replace(/"/g, '').trim() : "3 x 10-12";
+        let setsCount = 3;
+        if (sxr.includes('x')) {
+          let c = parseInt(sxr.split('x')[0]);
+          if (!isNaN(c)) setsCount = c;
+        }
+        currentSplit.exercises.push({ name: exName, sxr: sxr, setsCount: setsCount });
+      });
+      return splits;
+    }
+
+    // Compressed Format handler
+    let chunks = cleaned.split(/Workout\s*\n\s*N\s*\n\s*Exercise\s*\n\s*S x R\s*\n/i);
+    chunks.forEach(c => {
+      let chunkStr = c.trim();
+      if (!chunkStr) return;
+      let lines = chunkStr.split('\n');
+      let headerParts = [];
+      let bodyStartIdx = 0;
+
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim();
+        if (/^\d+[A-Za-z\u0600-\u06FF]/.test(line)) {
+          bodyStartIdx = i;
+          break;
+        }
+        headerParts.push(line);
+      }
+
+      let workoutName = headerParts.join(' ').trim().toUpperCase();
+      let bodyText = lines.slice(bodyStartIdx).join('\n');
+
+      let pattern = /(\d+)\s*([A-Za-z\u0600-\u06FF][A-Za-z\u0600-\u06FF\s\(\)\-\/\.\'\"]+?)\s*(\d+\s*x\s*\d+(?:-\d+)?)(?=\d+[A-Za-z\u0600-\u06FF]|\s*$)/g;
+      let match;
+      let exList = [];
+
+      while ((match = pattern.exec(bodyText)) !== null) {
+        let exName = match[2].trim();
+        let exSxr = match[3].trim();
+        let setsCount = 3;
+        if (exSxr.includes('x')) {
+          let sc = parseInt(exSxr.split('x')[0]);
+          if (!isNaN(sc)) setsCount = sc;
+        }
+        exList.push({ name: exName, sxr: exSxr, setsCount: setsCount });
+      }
+
+      if (exList.length > 0) {
+        splits.push({ name: workoutName, exercises: exList });
+      }
+    });
+
+    return splits;
+  }
+
+  function processCoachRoutineUpdate() {
+    const text = document.getElementById('coachInputText').value;
+    if (!text || !text.trim()) {
+      closeImportModal();
+      return;
+    }
+
+    let parsed = parseCoachText(text);
+    if (!parsed || parsed.length === 0) {
+      alert("Could not parse schedule. Please check the text format.");
+      return;
+    }
+
+    // Rebuild 12 weeks with the new parsed routine template
+    programData = buildDefault12Weeks(parsed);
+    saveState();
+    closeImportModal();
+    renderHomeScreen();
+    showToast("12 WEEKS UPDATED SUCCESSFULLY ✓");
+  }
+
+  /* ---------------- COACH CORNER 2: EXPORT / COPY TO SHEETS ---------------- */
+  function generateTSV(allWeeks = true) {
+    let rows = ["Week\tWorkout\tN\tExercise\tS x R\tSet 1 KG\tSet 1 Reps\tSet 2 KG\tSet 2 Reps\tSet 3 KG\tSet 3 Reps\tNote"];
+
+    let targetWeeks = allWeeks ? programData : [programData[currentWeekIdx]];
+
+    targetWeeks.forEach(w => {
+      w.splits.forEach(s => {
+        s.exercises.forEach((ex, idx) => {
+          let r = [`Week ${w.weekNum}`, s.name, (idx + 1).toString(), ex.name, ex.sxr];
+          let sets = ex.sets || [];
+          for (let i = 0; i < 3; i++) {
+            if (sets[i] && sets[i].kg && sets[i].kg !== "-") {
+              r.push(sets[i].kg);
+              r.push(sets[i].reps || "-");
+            } else {
+              r.push("-", "-");
+            }
+          }
+          r.push(ex.note || "");
+          rows.push(r.join('\t'));
+        });
+      });
+    });
+
+    return rows.join('\n');
+  }
+
+  function openExportModal() {
+    let tsv = generateTSV(true);
+    document.getElementById('exportPreviewText').value = tsv;
+    document.getElementById('exportModal').style.display = 'flex';
+  }
+
+  function closeExportModal() {
+    document.getElementById('exportModal').style.display = 'none';
+  }
+
+  function copyTSVData(allWeeks) {
+    let tsv = generateTSV(allWeeks);
+    navigator.clipboard.writeText(tsv).then(() => {
+      closeExportModal();
+      showToast(allWeeks ? "ALL 12 WEEKS COPIED ✓" : `WEEK ${currentWeekIdx + 1} COPIED ✓`);
+    }).catch(() => {
+      let area = document.getElementById('exportPreviewText');
+      area.value = tsv;
+      area.select();
+      document.execCommand('copy');
+      closeExportModal();
+      showToast("COPIED TO CLIPBOARD ✓");
+    });
+  }
+</script>
+</body>
+</html>
